@@ -47,6 +47,15 @@ var appEnv = cfenv.getAppEnv();
 
 var serviceName = "rahul-weather";
 
+var checkServices = appEnv.services[serviceName];
+console.log("checkServices is:"+ checkServices);
+
+
+var creds = appEnv.services[serviceName][0].credentials;
+console.log("Credentials are:"+ creds);
+
+
+
 var weather_host = appEnv.services[serviceName] 
         ? appEnv.services[serviceName][0].credentials.url // Weather credentials passed in
         : ""; // or copy your credentials url here for standalone
@@ -66,6 +75,7 @@ function weatherAPI(path, qs, done) {
         qs: qs
     }, function(err, req, data) {
         if (err) {
+        	//If an error occurs log that error...
             done(err);
         } else {
             if (req.statusCode >= 200 && req.statusCode < 400) {
