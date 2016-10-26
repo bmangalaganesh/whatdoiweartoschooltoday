@@ -1,0 +1,28 @@
+{
+  "name": "rahul-what-to-wear",
+  "version": "0.0.1",
+  "private": false,
+  "scripts": {
+    "start": "node app.js"
+  },
+  
+  "repository": {
+	    "type": "git",
+	    "url": "https://github.com/IBM-Bluemix/weather-company-data-demo.git"
+	  },
+  "dependencies": {
+    "express": "~3.4.*",
+    "jade": "*",
+    "cfenv": "^1.0.3",
+    "helmet": "^2.1.1",
+    "request": "^2.51.0"
+  },
+  
+  "author": [
+	    {
+	      "name": "Manglu Balasubramnian",
+	      "email": "bmangalaganesh@au1.ibm.com"
+	    }
+	  ]
+}
+
