@@ -44,11 +44,16 @@ app.configure(function(){
 
 // get the app environment from Cloud Foundry
 var appEnv = cfenv.getAppEnv();
-var weather_host = appEnv.services["weatherinsights"] 
-        ? appEnv.services["weatherinsights"][0].credentials.url // Weather credentials passed in
+
+var serviceName = "rahul-weather";
+
+var weather_host = appEnv.services[serviceName] 
+        ? appEnv.services[serviceName][0].credentials.url // Weather credentials passed in
         : ""; // or copy your credentials url here for standalone
 
 function weatherAPI(path, qs, done) {
+	
+	console.log ("Weather Host is:" + weather_host);
     var url = weather_host + path;
     console.log(url, qs);
     request({
@@ -83,7 +88,7 @@ app.get('/api/forecast/daily', function(req, res) {
     
     //Hard-coding these for the moment...
     geocode[0] = latitude;
-    geocode[1] = longtitude;
+    geocode[1] = longitude;
     
     weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1] + "/forecast/daily/10day.json", {
         units: req.query.units || "m",
