@@ -45,7 +45,7 @@ app.configure(function(){
 // get the app environment from Cloud Foundry
 var appEnv = cfenv.getAppEnv();
 
-var serviceName = "rahul-weather";
+var serviceName = "weatherinsights";
 
 var checkServices = appEnv.services[serviceName];
 console.log("checkServices is:"+ checkServices);
