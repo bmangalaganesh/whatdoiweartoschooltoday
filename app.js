@@ -26,6 +26,10 @@ var helmet = require('helmet');
 var app = express();
 var ninetyDaysInMilliseconds = 7776000000;
 
+//This is the latitude and Longitude for Glen Waverley, VIC 3150
+var latitude = '-37.8828820';	
+var longitude= '145.1776060';
+
 app.configure(function(){
   app.use(express.static(__dirname + '/public'));
   // set the HTTP Strict Transport Security (HSTS) header for 90 days	
@@ -76,6 +80,11 @@ function weatherAPI(path, qs, done) {
 
 app.get('/api/forecast/daily', function(req, res) {
     var geocode = (req.query.geocode || "45.43,-75.68").split(",");
+    
+    //Hard-coding these for the moment...
+    geocode[0] = latitude;
+    geocode[1] = longtitude;
+    
     weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1] + "/forecast/daily/10day.json", {
         units: req.query.units || "m",
         language: req.query.language || "en"
@@ -92,6 +101,11 @@ app.get('/api/forecast/daily', function(req, res) {
 
 app.get('/api/forecast/hourly', function(req, res) {
     var geocode = (req.query.geocode || "45.43,-75.68").split(",");
+    
+    //Hard-coding these for the moment...
+    geocode[0] = latitude;
+    geocode[1] = longtitude;
+    
     weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1] + "/forecast/hourly/48hour.json", {
         units: req.query.units || "m",
         language: req.query.language || "en"
