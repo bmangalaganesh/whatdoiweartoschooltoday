@@ -109,7 +109,7 @@ app.get('/api/forecast/hourly', function(req, res) {
     
     //Hard-coding these for the moment...
     geocode[0] = latitude;
-    geocode[1] = longtitude;
+    geocode[1] = longitude;
     
     weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1] + "/forecast/hourly/48hour.json", {
         units: req.query.units || "m",
