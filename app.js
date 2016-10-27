@@ -22,6 +22,10 @@ var cfenv = require('cfenv');
 // Security - helmet
 var helmet = require('helmet');
 
+
+//Pretty Print JSON - Use that till i build an AngularJS UI
+var pretty = require('express-prettify');
+
 // setup middleware
 var app = express();
 var ninetyDaysInMilliseconds = 7776000000;
@@ -40,6 +44,10 @@ app.configure(function() {
 	}));
 	// Prevent Cross-site scripting (XSS) attacks
 	app.use(helmet.xssFilter());
+	
+	//Configure Express to use pretty..
+	app.use(pretty({ query: 'pretty' }));
+	
 });
 
 // get the app environment from Cloud Foundry
