@@ -43,6 +43,7 @@ app.configure(function() {
 });
 
 // get the app environment from Cloud Foundry
+
 var appEnv = cfenv.getAppEnv();
 
 var serviceName = "weatherinsights";
@@ -50,14 +51,14 @@ var serviceName = "weatherinsights";
 var checkServices = appEnv.services[serviceName];
 console.log("checkServices is:" + checkServices);
 
-var creds = appEnv.services[serviceName][0].credentials;
-console.log("Credentials are:" + creds);
-
 var weather_host = appEnv.services[serviceName] ? appEnv.services[serviceName][0].credentials.url // Weather
 		// credentials
 		// passed
 		// in
 		: ""; // or copy your credentials url here for standalone
+
+// Hard-code for local execution..
+weather_host = 'https://3981aee7-448c-4ea3-a254-bac1782cda37:2mSEubBc3i@twcservice.mybluemix.net';
 
 function weatherAPI(path, qs, done) {
 
@@ -136,7 +137,7 @@ app.get('/api/forecast/hourly', function(req, res) {
 			result.forecasts.length = 24; // we require only 24 hours for UI
 
 			// Invoke hoursOfInterest
-			hoursOfInterest(forecasts, function(err, result) {
+			hoursOfInterest(result.forecasts, function(err, result) {
 				// Let's return the original result here..
 				res.json(result);
 			});
@@ -145,42 +146,140 @@ app.get('/api/forecast/hourly', function(req, res) {
 	});
 });
 
+app.get('/simpleverdict', function(req, res) {
+
+	defaultCoordinates = latitude + "," + longitude;
+	var geocode = (req.query.geocode || defaultCoordinates).split(",");
+
+	weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1]
+			+ "/forecast/hourly/48hour.json", {
+		units : req.query.units || "m",
+		language : req.query.language || "en"
+	}, function(err, result) {
+		if (err) {
+			res.send(err).status(400);
+		} else {
+			console.log("24 hours Forecast");
+
+			// This function should return a dress Object
+			hoursOfInterest(result.forecasts, function(err, result) {
+				res.json(result);
+			});
+
+		}
+	});
+});
+
+// Definition of our Weather Object
+function myWeatherObject(localtime, temperature, feelsLike, desc, uvIndex) {
+	this.localtime = localtime;
+	this.temp = temperature;
+	this.feelsLike = feelsLike;
+	this.weatherOverview = desc;
+	this.uv = uvIndex;
+}
+
+// Definition of a DayWeather (high level of the day's weather)
+function dayWeather(min, max) {
+	this.minimum = min;
+	this.maximum = max;
+}
+
+// Definition of the Verdict Object
+function verdict(dress, daySummary, type) {
+
+	this.dress = dress;
+	if (type != 'Simple') {
+		this.weather = daySummary;
+	}
+
+}
+// Definition of Dress Object
+function dress(hourlyWeather, daySummary) {
+	if (daySummary.minimum > 14) {
+		this.bottom = "Shorts";
+		this.top = "Half Sleeve";
+
+	} else {
+		this.bottom = "Full Pant";
+		this.top = "Full Sleeve";
+		this.jumper = true;
+	}
+
+	// Get a bit lenient with Jumper
+	// If it is sunny through the day, no winds and Temp is above 12 then he can
+	// go without a jumper...
+
+	if (daySummary.minimum < 12) {
+		this.jumper = true;
+	} else {
+		this.jumper = false;
+	}
+
+	if (daySummary.maximum > 18) {
+		this.hat = true;
+	}
+
+	// Based on the rain parameters set this flag..
+	this.umbrella = false;
+}
+
 // Write a function that extracts the temp info for the period 8AM - 4 PM
-/*
- * 
- * The elements of interest are: "temp": 14, "dewpt": 5, "hi": 14, "wc": 13,
- * "feels_like": 13,
- * 
- */
 
 // Extract the hours of interest from the forecasts array
 function hoursOfInterest(forecasts, callback) {
-	console.log('Inside the hours of Interest .....');
 
 	// Perform the computation here....
-	var interestedInfo = forecasts.length = 24;
+
+	var hourlyWeather = [];
+	var weatherInfo = null;
+	var localTime = null;
+	var minTemp = 40; // Make it an artifically high number so that the first
+						// entry will become the minTemp by default
+	var maxTemp = 0;
 
 	// Iterate through the forecast array
 
-	forecasts.forEach(function(key, value) {
-		if (key === 'fcst_valid_local')
-			console.log("Time:" + value);
+	for (var i = 0; i < forecasts.length; i++) {
 
-		if ((key === 'temp') || (key === 'feels_like')) {
-			console.log(key);
-			console.log(value);
+		// Get the temperature only where the time is between 08 and 16 hours -
+		// Ignore the day for the moment
+
+		localTime = forecasts[i].fcst_valid_local.substring(11, 19);
+		localHour = parseInt(localTime.substring(0, 2));
+
+		// This is the hour of interest to us... 8AM - 4PM
+		if (localHour > 7 && localHour < 17) {
+
+			if (forecasts[i].feels_like < minTemp) {
+				minTemp = forecasts[i].feels_like;
+			}
+
+			if (forecasts[i].feels_like > maxTemp) {
+				maxTemp = forecasts[i].feels_like;
+			}
+
+			console.log("Hour:" + localHour);
+			weatherInfo = new myWeatherObject(forecasts[i].fcst_valid_local
+					.substring(11, 19), forecasts[i].temp,
+					forecasts[i].feels_like, forecasts[i].phrase_32char,
+					forecasts[i].uv_index);
+			// console.log("Weather Info is:" + JSON.stringify(weatherInfo));
+
+			hourlyWeather.push(weatherInfo);
+
 		}
+	}
 
-	});
+	console.log("Minimum temp in the period of interest is:" + minTemp
+			+ " and the maximum is:" + maxTemp);
+
+	var daySummary = new dayWeather(minTemp, maxTemp);
+
+	var theDress = new dress(hourlyWeather, daySummary);
+	callback(null, new verdict(theDress, daySummary, 'Detailed'));
 
 };
-
-// invoke async function:
-console.log('I will be logged first');
-login(username, password, function(err, result) {
-	console.log('I will be logged fourth');
-	console.log('The user is', result)
-});
 
 app.listen(appEnv.port, appEnv.bind, function() {
 	console.log("server starting on " + appEnv.url);
