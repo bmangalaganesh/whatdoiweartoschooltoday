@@ -51,11 +51,14 @@ var serviceName = "weatherinsights";
 var checkServices = appEnv.services[serviceName];
 console.log("checkServices is:" + checkServices);
 
+
+console.log("App Environemnt is:" + JSON.stringify(appEnv));
+
 var weather_host = appEnv.services[serviceName] ? appEnv.services[serviceName][0].credentials.url // Weather
 		// credentials
 		// passed
 		// in
-		: ""; // or copy your credentials url here for standalone
+		: ""; // or copy your credentials url here for stand-alone
 
 // Hard-code for local execution..
 weather_host = 'https://3981aee7-448c-4ea3-a254-bac1782cda37:2mSEubBc3i@twcservice.mybluemix.net';
@@ -264,7 +267,7 @@ function hoursOfInterest(forecasts, callback) {
 					.substring(11, 19), forecasts[i].temp,
 					forecasts[i].feels_like, forecasts[i].phrase_32char,
 					forecasts[i].uv_index);
-			// console.log("Weather Info is:" + JSON.stringify(weatherInfo));
+			console.log("Weather Info is:" + JSON.stringify(weatherInfo));
 
 			hourlyWeather.push(weatherInfo);
 
