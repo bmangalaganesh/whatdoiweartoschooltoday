@@ -9,3 +9,4 @@ applications:
   memory: 512M
   services:
    - rahul-weather
+   - MongoDB-n3

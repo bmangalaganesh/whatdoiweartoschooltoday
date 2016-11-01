@@ -22,8 +22,10 @@ var cfenv = require('cfenv');
 // Security - helmet
 var helmet = require('helmet');
 
+// Moment JS (for date manipulation)
+var momentjs = require('moment');
 
-//Pretty Print JSON - Use that till i build an AngularJS UI
+// Pretty Print JSON - Use that till i build an AngularJS UI
 var pretty = require('express-prettify');
 
 // setup middleware
@@ -44,10 +46,12 @@ app.configure(function() {
 	}));
 	// Prevent Cross-site scripting (XSS) attacks
 	app.use(helmet.xssFilter());
-	
-	//Configure Express to use pretty..
-	app.use(pretty({ query: 'pretty' }));
-	
+
+	// Configure Express to use pretty..
+	app.use(pretty({
+		query : 'pretty'
+	}));
+
 });
 
 // get the app environment from Cloud Foundry
@@ -59,7 +63,6 @@ var serviceName = "weatherinsights";
 var checkServices = appEnv.services[serviceName];
 console.log("checkServices is:" + checkServices);
 
-
 console.log("App Environemnt is:" + JSON.stringify(appEnv));
 
 var weather_host = appEnv.services[serviceName] ? appEnv.services[serviceName][0].credentials.url // Weather
@@ -70,6 +73,9 @@ var weather_host = appEnv.services[serviceName] ? appEnv.services[serviceName][0
 
 // Hard-code for local execution..
 weather_host = 'https://3981aee7-448c-4ea3-a254-bac1782cda37:2mSEubBc3i@twcservice.mybluemix.net';
+
+// The default coordinates of Glen Waverley
+var defaultCoordinates = latitude + "," + longitude;
 
 function weatherAPI(path, qs, done) {
 
@@ -108,11 +114,7 @@ function weatherAPI(path, qs, done) {
 }
 
 app.get('/api/forecast/daily', function(req, res) {
-	var geocode = (req.query.geocode || "45.43,-75.68").split(",");
-
-	// Hard-coding these for the moment...
-	geocode[0] = latitude;
-	geocode[1] = longitude;
+	var geocode = (req.query.geocode || defaultCoordinates).split(",");
 
 	weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1]
 			+ "/forecast/daily/10day.json", {
@@ -130,11 +132,7 @@ app.get('/api/forecast/daily', function(req, res) {
 });
 
 app.get('/api/forecast/hourly', function(req, res) {
-	var geocode = (req.query.geocode || "45.43,-75.68").split(",");
-
-	// Hard-coding these for the moment...
-	geocode[0] = latitude;
-	geocode[1] = longitude;
+	var geocode = (req.query.geocode || defaultCoordinates).split(",");
 
 	weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1]
 			+ "/forecast/hourly/48hour.json", {
@@ -159,7 +157,6 @@ app.get('/api/forecast/hourly', function(req, res) {
 
 app.get('/simpleverdict', function(req, res) {
 
-	defaultCoordinates = latitude + "," + longitude;
 	var geocode = (req.query.geocode || defaultCoordinates).split(",");
 
 	weatherAPI("/api/weather/v1/geocode/" + geocode[0] + "/" + geocode[1]
@@ -190,12 +187,26 @@ function myWeatherObject(localtime, temperature, feelsLike, desc, uvIndex) {
 	this.uv = uvIndex;
 }
 
-// Definition of a DayWeather (high level of the day's weather)
-function dayWeather(min, max) {
+// Definition of a DayWeather (high level of the day's weather and also contains
+// Day information - Date, is it a holiday (and why e.g. weekend)
+function dayWeather(min, minAtHour, max, maxAtHour) {
 	this.minimum = min;
+	this.minimumTempAt = minAtHour;
 	this.maximum = max;
+	this.maximumTempAt = maxAtHour;
+
 }
 
+function dayInfo() {
+
+	this.date = momentjs(new Date(), 'DD/MM/YYYY', true).format('DD/MM/YYYY');
+	this.dayOfWeek = momentjs().format('dddd');
+	this.isHoliday = false;
+
+	if ((this.dayOfWeek == 'Sunday') || (this.dayOfWeek == 'Saturday')) {
+		this.isHoliday = true;
+	}
+}
 // Definition of the Verdict Object
 function verdict(dress, daySummary, type) {
 
@@ -203,6 +214,8 @@ function verdict(dress, daySummary, type) {
 	if (type != 'Simple') {
 		this.weather = daySummary;
 	}
+	
+	this.day = new dayInfo();
 
 }
 // Definition of Dress Object
@@ -245,9 +258,12 @@ function hoursOfInterest(forecasts, callback) {
 	var hourlyWeather = [];
 	var weatherInfo = null;
 	var localTime = null;
-	var minTemp = 40; // Make it an artifically high number so that the first
-						// entry will become the minTemp by default
+	var minTemp = 50; // Make it an artifically high number so that the first
+	// entry will become the minTemp by default
 	var maxTemp = 0;
+
+	var maxTempAtHour;
+	var minTempAtHour;
 
 	// Iterate through the forecast array
 
@@ -264,10 +280,12 @@ function hoursOfInterest(forecasts, callback) {
 
 			if (forecasts[i].feels_like < minTemp) {
 				minTemp = forecasts[i].feels_like;
+				minTempAtHour = localHour;
 			}
 
 			if (forecasts[i].feels_like > maxTemp) {
 				maxTemp = forecasts[i].feels_like;
+				maxTempAtHour = localHour;
 			}
 
 			console.log("Hour:" + localHour);
@@ -285,9 +303,10 @@ function hoursOfInterest(forecasts, callback) {
 	console.log("Minimum temp in the period of interest is:" + minTemp
 			+ " and the maximum is:" + maxTemp);
 
-	var daySummary = new dayWeather(minTemp, maxTemp);
-
+	var daySummary = new dayWeather(minTemp, minTempAtHour, maxTemp,
+			maxTempAtHour);
 	var theDress = new dress(hourlyWeather, daySummary);
+
 	callback(null, new verdict(theDress, daySummary, 'Detailed'));
 
 };
