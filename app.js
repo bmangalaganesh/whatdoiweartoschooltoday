@@ -220,6 +220,20 @@ function verdict(dress, daySummary, type) {
 }
 // Definition of Dress Object
 function dress(hourlyWeather, daySummary) {
+	
+	//Set the defaults
+	this.umbrella = false;
+	this.hat = false;
+	this.jumper = true;
+	
+	//if the maximum is above 23 and the minimum is 10 and the period is sunny switch to shorts and half sleeve.
+	if (daySummary.maximum >=23){		
+		this.bottom = "Shorts";
+		this.top = "Half Sleeve";
+		this.jumper = false;
+		return;
+	}
+	
 	if (daySummary.minimum > 14) {
 		this.bottom = "Shorts";
 		this.top = "Half Sleeve";
