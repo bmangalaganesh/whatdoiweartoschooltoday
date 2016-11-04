@@ -58,6 +58,16 @@ app.configure(function() {
 
 var appEnv = cfenv.getAppEnv();
 
+if (!appEnv){
+	//If appEnv is not null then print the object so that we can see what is in it...
+	console.log("App Env is:" + JSON.stringify(appEnv));
+	
+	//If the app is run locally 
+	var isLocal  = appEnv.isLocal;
+	console.log("is the app running locally:"+ isLocal);
+	
+}
+
 var serviceName = "weatherinsights";
 
 var checkServices = appEnv.services[serviceName];
@@ -216,8 +226,37 @@ function verdict(dress, daySummary, type) {
 	}
 	
 	this.day = new dayInfo();
+	
+	this.food = new FoodSnacksAndDrinks(daySummary);
 
 }
+
+
+function FoodSnacksAndDrinks(daySummary){
+	
+	var snacks = [];
+	var drinks = [];
+	var weatherType = "Normal";
+	
+	if (daySummary.maximum >=30){
+		weatherType = "Very Hot";
+	}
+	else if (daySummary.maximum >=25){
+		weatherType = "Hot";
+	}
+	
+	if (weatherType == "Very Hot" || weatherType == "Hot"){
+	 snacks.push("Ice Creams");
+	 drinks.push("Lassi");
+	 
+	 this.snacks = snacks;
+	 this.drinks = drinks;
+	}
+	
+	
+	
+}
+
 // Definition of Dress Object
 function dress(hourlyWeather, daySummary) {
 	
@@ -272,7 +311,7 @@ function hoursOfInterest(forecasts, callback) {
 	var hourlyWeather = [];
 	var weatherInfo = null;
 	var localTime = null;
-	var minTemp = 50; // Make it an artifically high number so that the first
+	var minTemp = 50; // Make it an artificially high number so that the first
 	// entry will become the minTemp by default
 	var maxTemp = 0;
 
